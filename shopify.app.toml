@@ -2,7 +2,7 @@
 
 client_id = "9e79d7829417f54ac505a532a742f53b"
 name = "Orderhold"
-application_url = "https://example.com"
+application_url = "https://orderhold-ff07a97aa74d.herokuapp.com/"
 embedded = true
 
 [build]

@@ -1,5 +1,5 @@
-import shopify from "../shopify.js";
 import storeModel from "../Models/Store.Model.js";
+import shopify from "../shopify.js";
 
 export const getShop = async (req, res) => {
     try {

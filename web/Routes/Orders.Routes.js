@@ -1,5 +1,5 @@
-import { Router } from "express";
-import { getShopifyOrders } from "../Controllers/Orders.Controller.js";
+import { Router } from "express"; 
+import { getShopifyOrders } from "../Controller/Orders.Controller.js";
 
 const OrderRouter = Router();
 

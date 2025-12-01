@@ -29,3 +29,8 @@ redirect_urls = [
     "https://orderhold-ff07a97aa74d.herokuapp.com/api/auth/callback",
     "https://orderhold-ff07a97aa74d.herokuapp.com/auth/shopify/callback",
 ]
+
+[app_proxy]
+url = "https://orderhold-ff07a97aa74d.herokuapp.com/eproxy"
+subpath = "edit"
+prefix = "apps"

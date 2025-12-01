@@ -1,5 +1,6 @@
 import { DeliveryMethod } from "@shopify/shopify-api";
 import shopify from "./shopify.js";
+import { createShopifyOrder } from "./Controller/Orders.Controller.js";
 
 /**
  * @type {{[key: string]: import("@shopify/shopify-api").WebhookHandler}}
@@ -102,7 +103,7 @@ export default {
 
         const session = sessions[0];
         console.log("Session found:", session.id);
-
+        await createShopifyOrder(data, shop);
       } catch (error) {
         console.error("Webhook processing error:", error);
         // Rethrow to ensure proper error handling

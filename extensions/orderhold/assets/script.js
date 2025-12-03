@@ -3,6 +3,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get("OrderId");
 
+    console.log("ORDER ID:", orderId);
+
     const { shop } = window.edit;
 
     if (!orderId) return;

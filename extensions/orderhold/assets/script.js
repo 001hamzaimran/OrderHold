@@ -1,36 +1,37 @@
 window.addEventListener("DOMContentLoaded", async () => {
+    console.log("DOM CONTENT LOADED");
     // Always reliably get query params
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderId = urlParams.get("OrderId");
+    // const urlParams = new URLSearchParams(window.location.search);
+    // const orderId = urlParams.get("OrderId");
 
-    console.log("ORDER ID:", orderId);
+    // console.log("ORDER ID:", orderId);
 
-    const { shop } = window.edit;
+    // const { shop } = window.edit;
 
-    if (!orderId) return;
+    // if (!orderId) return;
 
     // const body = document.querySelector("body");
 
-    // ---------- Fetch Order ----------
-    const fetchOrder = async () => {
-        const response = await fetch(
-            `https://${shop}/apps/edit/get-Orders/${shop}/${orderId}`
-        );
-        return await response.json();
-    };
+    // // ---------- Fetch Order ----------
+    // const fetchOrder = async () => {
+    //     const response = await fetch(
+    //         `https://${shop}/apps/edit/get-Orders/${shop}/${orderId}`
+    //     );
+    //     return await response.json();
+    // };
 
-    const orderRes = await fetchOrder();
-    const order = orderRes?.order?.[0];
+    // const orderRes = await fetchOrder();
+    // const order = orderRes?.order?.[0];
 
-    console.log("LOADED ORDER:", order);
+    // console.log("LOADED ORDER:", order);
 
-    // If invalid order
-    if (!order) {
-        body.innerHTML = `<p style="color:red;">Order not found.</p>`;
-        return;
-    }
+    // // If invalid order
+    // if (!order) {
+    //     body.innerHTML = `<p style="color:red;">Order not found.</p>`;
+    //     return;
+    // }
 
-    // ---------- PAGE CONTENT ----------
+    // // ---------- PAGE CONTENT ----------
     // const pageHTML = `
     //     <div class="order-edit-wrapper">
 

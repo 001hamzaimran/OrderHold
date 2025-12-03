@@ -1,6 +1,8 @@
 window.addEventListener("DOMContentLoaded", async () => {
-    // Extract orderId from query params
-    const orderId = new URL(window.location.href).searchParams.get("OrderId");
+    // Always reliably get query params
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get("OrderId");
+
     const { shop } = window.edit;
 
     if (!orderId) return;

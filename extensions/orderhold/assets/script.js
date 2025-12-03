@@ -9,7 +9,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     if (!orderId) return;
 
-    const body = document.querySelector("body");
+    // const body = document.querySelector("body");
 
     // ---------- Fetch Order ----------
     const fetchOrder = async () => {
@@ -31,60 +31,60 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     // ---------- PAGE CONTENT ----------
-    const pageHTML = `
-        <div class="order-edit-wrapper">
+    // const pageHTML = `
+    //     <div class="order-edit-wrapper">
 
-            <div class="order-title">Edit Order #${order.order_number}</div>
+    //         <div class="order-title">Edit Order #${order.order_number}</div>
 
-            <!-- ORDER SUMMARY -->
-            <div class="order-section">
-                <h3>Order Summary</h3>
-                <p><strong>Total:</strong> ${order.total_price} ${order.currency}</p>
-                <p><strong>Status:</strong> ${order.financial_status}</p>
-                <p><strong>Payment Gateway:</strong> ${order.payment_gateway}</p>
-            </div>
+    //         <!-- ORDER SUMMARY -->
+    //         <div class="order-section">
+    //             <h3>Order Summary</h3>
+    //             <p><strong>Total:</strong> ${order.total_price} ${order.currency}</p>
+    //             <p><strong>Status:</strong> ${order.financial_status}</p>
+    //             <p><strong>Payment Gateway:</strong> ${order.payment_gateway}</p>
+    //         </div>
 
-            <!-- CUSTOMER -->
-            <div class="order-section">
-                <h3>Customer</h3>
-                <p>${order.customer.first_name} ${order.customer.last_name}</p>
-                <p>${order.customer.email}</p>
-            </div>
+    //         <!-- CUSTOMER -->
+    //         <div class="order-section">
+    //             <h3>Customer</h3>
+    //             <p>${order.customer.first_name} ${order.customer.last_name}</p>
+    //             <p>${order.customer.email}</p>
+    //         </div>
 
-            <!-- LINE ITEMS -->
-            <div class="order-section">
-                <h3>Line Items</h3>
-                ${order.line_items
-            .map(
-                (item) => `
-                        <div class="line-item">
-                            <p><strong>${item.title}</strong></p>
-                            <p>Price: ${item.price}</p>
-                            <p>Qty: <input type="number" value="${item.quantity}" min="1" /></p>
-                        </div>
-                    `
-            )
-            .join("")}
-            </div>
+    //         <!-- LINE ITEMS -->
+    //         <div class="order-section">
+    //             <h3>Line Items</h3>
+    //             ${order.line_items
+    //         .map(
+    //             (item) => `
+    //                     <div class="line-item">
+    //                         <p><strong>${item.title}</strong></p>
+    //                         <p>Price: ${item.price}</p>
+    //                         <p>Qty: <input type="number" value="${item.quantity}" min="1" /></p>
+    //                     </div>
+    //                 `
+    //         )
+    //         .join("")}
+    //         </div>
 
-            <!-- SHIPPING -->
-            <div class="order-section">
-                <h3>Shipping Address</h3>
-                <p>${order.shipping_address.first_name} ${order.shipping_address.last_name}</p>
-                <p>${order.shipping_address.address1}</p>
-                <p>${order.shipping_address.city}, ${order.shipping_address.country}</p>
-            </div>
+    //         <!-- SHIPPING -->
+    //         <div class="order-section">
+    //             <h3>Shipping Address</h3>
+    //             <p>${order.shipping_address.first_name} ${order.shipping_address.last_name}</p>
+    //             <p>${order.shipping_address.address1}</p>
+    //             <p>${order.shipping_address.city}, ${order.shipping_address.country}</p>
+    //         </div>
 
-            <!-- ACTIONS -->
-            <div>
-               <button onclick="window.location.href='https://${shop}'" class="edit-btn">Cancel</button>
+    //         <!-- ACTIONS -->
+    //         <div>
+    //            <button onclick="window.location.href='https://${shop}'" class="edit-btn">Cancel</button>
 
-               <button class="save-btn">Save Changes</button>
-            </div>
+    //            <button class="save-btn">Save Changes</button>
+    //         </div>
 
-        </div>
-    `;
+    //     </div>
+    // `;
 
-    // Replace entire body
-    body.innerHTML = pageHTML;
+    // // Replace entire body
+    // body.innerHTML = pageHTML;
 });

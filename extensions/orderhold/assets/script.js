@@ -1,22 +1,86 @@
-window.addEventListener("DOMContentLoaded", () => {
-    const url = window.location.href;
+window.addEventListener("DOMContentLoaded", async () => {
+    // Extract orderId from query params
+    const orderId = new URL(window.location.href).searchParams.get("orderId");
+    const { shop } = window.edit;
 
-    // Try to extract from `/edit/:orderId`
-    let orderId = url.split("/").pop();
-
-    // If query parameter style, override
-    const queryParam = new URL(window.location.href).searchParams.get("orderId");
-
-    if (queryParam) {
-        orderId = queryParam;
-    }
-
-    console.log("Final Order ID:", orderId);
+    if (!orderId) return;
 
     const body = document.querySelector("body");
-    if (orderId) {
-        const h1 = document.createElement("h1");
-        h1.textContent = "Edit Order " + orderId;
-        body.appendChild(h1);
+
+    // ---------- Fetch Order ----------
+    const fetchOrder = async () => {
+        const response = await fetch(
+            `https://${shop}/apps/edit/get-Orders/${shop}/${orderId}`
+        );
+        return await response.json();
+    };
+
+    const orderRes = await fetchOrder();
+    const order = orderRes?.order?.[0];
+
+    console.log("LOADED ORDER:", order);
+
+    // If invalid order
+    if (!order) {
+        body.innerHTML = `<p style="color:red;">Order not found.</p>`;
+        return;
     }
+
+    // ---------- PAGE CONTENT ----------
+    const pageHTML = `
+        <div class="order-edit-wrapper">
+
+            <div class="order-title">Edit Order #${order.order_number}</div>
+
+            <!-- ORDER SUMMARY -->
+            <div class="order-section">
+                <h3>Order Summary</h3>
+                <p><strong>Total:</strong> ${order.total_price} ${order.currency}</p>
+                <p><strong>Status:</strong> ${order.financial_status}</p>
+                <p><strong>Payment Gateway:</strong> ${order.payment_gateway}</p>
+            </div>
+
+            <!-- CUSTOMER -->
+            <div class="order-section">
+                <h3>Customer</h3>
+                <p>${order.customer.first_name} ${order.customer.last_name}</p>
+                <p>${order.customer.email}</p>
+            </div>
+
+            <!-- LINE ITEMS -->
+            <div class="order-section">
+                <h3>Line Items</h3>
+                ${order.line_items
+            .map(
+                (item) => `
+                        <div class="line-item">
+                            <p><strong>${item.title}</strong></p>
+                            <p>Price: ${item.price}</p>
+                            <p>Qty: <input type="number" value="${item.quantity}" min="1" /></p>
+                        </div>
+                    `
+            )
+            .join("")}
+            </div>
+
+            <!-- SHIPPING -->
+            <div class="order-section">
+                <h3>Shipping Address</h3>
+                <p>${order.shipping_address.first_name} ${order.shipping_address.last_name}</p>
+                <p>${order.shipping_address.address1}</p>
+                <p>${order.shipping_address.city}, ${order.shipping_address.country}</p>
+            </div>
+
+            <!-- ACTIONS -->
+            <div>
+               <button onclick="window.location.href='https://${shop}'" class="edit-btn">Cancel</button>
+
+               <button class="save-btn">Save Changes</button>
+            </div>
+
+        </div>
+    `;
+
+    // Replace entire body
+    body.innerHTML = pageHTML;
 });

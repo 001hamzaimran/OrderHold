@@ -1,0 +1,50 @@
+.order-edit-wrapper {
+    font-family: sans-serif;
+    padding: 20px;
+}
+
+.order-title {
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.order-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.order-section h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.line-item {
+    padding: 10px;
+    border-bottom: 1px solid #efefef;
+}
+
+.line-item:last-child {
+    border-bottom: none;
+}
+
+.edit-btn {
+    background: #111827;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    margin-right: 10px;
+}
+
+.save-btn {
+    background: #2563EB;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+}

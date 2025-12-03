@@ -4,7 +4,9 @@ import { readFileSync } from "fs";
 import express from "express";
 import serveStatic from "serve-static";
 
+
 import shopify from "./shopify.js";
+// @ts-ignore
 import productCreator from "./product-creator.js";
 import PrivacyWebhookHandlers from "./privacy.js";
 import connectDB from "./Utils/DB.Config.js";
@@ -34,17 +36,32 @@ app.post(
   shopify.config.webhooks.path,
   shopify.processWebhooks({ webhookHandlers: PrivacyWebhookHandlers })
 );
-
+app.set('trust proxy', true)
+// @ts-ignore
+async function authenticateUser(req, res, next) {
+  let shop = req.query.shop;
+  let storeName = await shopify.config.sessionStorage.findSessionsByShop(shop);
+  // console.log("storename for view", storeName);
+  console.log("Shop for view", shop);
+  if (shop === storeName[0].shop) {
+    next();
+  } else {
+    res.send("User is not Authorized");
+  }
+}
 // If you are adding routes outside of the /api path, remember to
 // also add a proxy rule for them in web/frontend/vite.config.js
 
 app.use("/api/*", shopify.validateAuthenticatedSession());
+app.use("/proxy/*", authenticateUser);
 
 app.use(express.json());
 connectDB();
 
 app.use("/api/store/", storeRouter);
 app.use("/api/Orders/", OrderRouter);
+app.use("/proxy/", OrderRouter);
+
 
 app.use(shopify.cspHeaders());
 app.use(serveStatic(STATIC_PATH, { index: false }));
@@ -61,3 +78,4 @@ app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res, _next) => {
 });
 
 app.listen(PORT);
+// jvgl xsxj jofb ujmu

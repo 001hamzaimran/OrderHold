@@ -1,3 +1,4 @@
+import sendEditEmail from "../Middlewares/Email/Email.config.js";
 import ShopifyOrder from "../Models/Orders.Model.js";
 
 export const createShopifyOrder = async (payload, shop) => {
@@ -85,5 +86,31 @@ export const getShopifyOrders = async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+
+export const getOrder = async (req, res) => {
+    try {
+        const { orderId, shop } = req.params;
+        const order = await ShopifyOrder.find({ shopify_order_id: orderId, shopify_store_id: shop });
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+        return res.status(200).json({ success: true, order });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const sendEditOrderMail = async (shop, payload) => {
+    try {
+        const order = payload;
+        await sendEditEmail(order.customer.email, shop, order.id);
+        return ({ success: true });
+    } catch (error) {
+        console.error(error);
+        return
     }
 };

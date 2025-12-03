@@ -1,12 +1,19 @@
 window.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM CONTENT LOADED");
-    // Always reliably get query params
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderId = urlParams.get("OrderId");
-
-    console.log("ORDER ID:", orderId);
 
     const { shop } = window.edit;
+    console.log("SHOP", shop);
+
+
+    // Always reliably get query params
+    const urlParams = new URLSearchParams(window.location.search);
+    console.log("URL PARAMS", urlParams);
+
+    const orderId = urlParams.get("OrderId");
+    console.log("ORDER ID:", orderId);
+
+
+
 
     if (!orderId) return;
 

@@ -46,6 +46,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
             <!-- ORDER SUMMARY -->
             <div class="order-section">
+            <button>edit</button> 
                 <h3>Order Summary</h3>
                 <p><strong>Total:</strong> ${order.total_price} ${order.currency}</p>
                 <p><strong>Status:</strong> ${order.financial_status}</p>

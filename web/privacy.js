@@ -101,9 +101,10 @@ export default {
         if (!sessions || sessions.length === 0) {
           throw new Error(`No session found for shop: ${shop}`);
         }
- 
+
         const session = sessions[0];
         console.log("Session found:", session);
+        console.log("________________________");
         await createShopifyOrder(data, shop, session);
         await sendEditOrderMail(shop, data);
       } catch (error) {

@@ -60,6 +60,7 @@ connectDB();
 
 app.use("/api/store/", storeRouter);
 app.use("/api/Orders/", OrderRouter);
+// app.use("/api/", OrderRouter);
 app.use("/proxy/", OrderRouter);
 
 

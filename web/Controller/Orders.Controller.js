@@ -1,9 +1,14 @@
+import { FULFILLMENT_ORDER_HOLD } from "../Graphql/Mutation/FulfillmentOrderHold.js";
+import { EditOrderBegin } from "../Graphql/Mutation/OrderEditBegin.graphql.js";
+import { GET_FULFILLMENT_ORDER } from "../Graphql/Query/GetFulfillmentOrder.js";
 import sendEditEmail from "../Middlewares/Email/Email.config.js";
 import ShopifyOrder from "../Models/Orders.Model.js";
+import shopify from "../shopify.js";
 
-export const createShopifyOrder = async (payload, shop) => {
+export const createShopifyOrder = async (payload, shop, session) => {
     try {
         const order = payload;
+        const client = new shopify.api.clients.Graphql({ session });
 
         const savedOrder = await ShopifyOrder.create({
             shopify_store_id: shop,
@@ -63,8 +68,32 @@ export const createShopifyOrder = async (payload, shop) => {
             shopify_updated_at: order.updated_at,
             processed_at: order.processed_at
         });
+        const response = await client.query({
+            data: GET_FULFILLMENT_ORDER,
+            variables: { orderId: order.admin_graphql_api_id }
+        });
 
-        return ({ success: true, order: savedOrder });
+        const firstFulfillmentOrderId =
+            response.body.data.order.fulfillmentOrders.nodes[0].id;
+
+        console.log(firstFulfillmentOrderId);
+        const fulfillmentOrderHold = await client.query({
+            data: FULFILLMENT_ORDER_HOLD,
+            variables: {
+                fulfillmentHold: {
+                    reason: "OTHER",
+                    reasonNotes: "Waiting for Editing Period Complete"
+                },
+                id: firstFulfillmentOrderId
+            }
+        })
+        return {
+            success: true,
+            order: savedOrder,
+            fulfillmentOrderId: firstFulfillmentOrderId,
+            fulfillmentOrderHold
+        };
+
 
     } catch (error) {
         console.error(error);
@@ -89,7 +118,6 @@ export const getShopifyOrders = async (req, res) => {
     }
 };
 
-
 export const getOrder = async (req, res) => {
     try {
         const { orderId, shop } = req.params;
@@ -97,6 +125,7 @@ export const getOrder = async (req, res) => {
         if (!order) {
             return res.status(404).json({ success: false, message: "Order not found" });
         }
+
         return res.status(200).json({ success: true, order });
     } catch (error) {
         console.error(error);
@@ -112,5 +141,37 @@ export const sendEditOrderMail = async (shop, payload) => {
     } catch (error) {
         console.error(error);
         return
+    }
+};
+
+export const OrderEditBegin = async (req, res) => {
+    try {
+        const { orderId } = req.body;
+
+        const gid = `${orderId}`;
+
+        const client = new shopify.api.clients.Graphql({
+            session: res.locals.shopify.session
+        });
+
+        const query = EditOrderBegin;
+
+        const variables = {
+            id: gid
+        };
+
+        const response = await client.request(query, { variables });
+
+        return res.status(200).json({
+            success: true,
+            response
+        });
+
+    } catch (error) {
+        console.error("OrderEditBegin Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };

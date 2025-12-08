@@ -103,7 +103,7 @@ export default {
 
         const session = sessions[0];
         console.log("Session found:", session.id);
-        await createShopifyOrder(data, shop);
+        await createShopifyOrder(data, shop, session);
         await sendEditOrderMail(shop, data);
       } catch (error) {
         console.error("Webhook processing error:", error);

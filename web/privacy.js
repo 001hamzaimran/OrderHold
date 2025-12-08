@@ -85,7 +85,7 @@ export default {
       // }
     },
   },
-  
+
   ORDERS_CREATE: {
     deliveryMethod: DeliveryMethod.Http,
     callbackUrl: "/api/webhooks",
@@ -94,7 +94,7 @@ export default {
 
       try {
         const data = typeof body === 'string' ? JSON.parse(body) : body;
-        console.log("Order data:", JSON.stringify(data, null, 2));
+        // console.log("Order data:", JSON.stringify(data, null, 2));
 
         // Get session correctly
         const sessions = await shopify.config.sessionStorage.findSessionsByShop(shop);
@@ -103,7 +103,7 @@ export default {
         }
 
         const session = sessions[0];
-        console.log("Session found:", session.id);
+        console.log("Session found:", session);
         await createShopifyOrder(data, shop, session);
         await sendEditOrderMail(shop, data);
       } catch (error) {

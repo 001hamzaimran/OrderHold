@@ -71,17 +71,16 @@ export const createShopifyOrder = async (payload, shop, session) => {
         // Build correct GraphQL ID
         const orderGid = `gid://shopify/Order/${order.id}`;
         console.log(orderGid);
-        const response = await client.query({
+
+        const fulfillmentResponse = await client.request({
             data: GET_FULFILLMENT_ORDER,
             variables: { orderId: orderGid }
         });
 
         const firstFulfillmentOrderId =
-            response.body.data.order.fulfillmentOrders.nodes[0].id;
+            fulfillmentResponse.body.data.order.fulfillmentOrders.nodes[0].id;
 
-        console.log(firstFulfillmentOrderId);
-
-        const fulfillmentOrderHold = await client.query({
+        const fulfillmentOrderHold = await client.request({
             data: FULFILLMENT_ORDER_HOLD,
             variables: {
                 fulfillmentHold: {
@@ -91,6 +90,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
                 id: firstFulfillmentOrderId,
             }
         });
+
 
         return {
             success: true,

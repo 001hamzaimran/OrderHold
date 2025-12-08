@@ -72,10 +72,11 @@ export const createShopifyOrder = async (payload, shop, session) => {
         const orderGid = `gid://shopify/Order/${order.id}`;
         console.log("____", orderGid, "____");
 
-        const fulfillmentResponse = await client.request({
-            data: GET_FULFILLMENT_ORDER,
+        await client.request({
+            query: GET_FULFILLMENT_ORDER,
             variables: { orderId: orderGid }
         });
+
 
         const firstFulfillmentOrderId =
             fulfillmentResponse.body.data.order.fulfillmentOrders.nodes[0].id;
@@ -83,7 +84,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
         console.log("____", firstFulfillmentOrderId, "____");
 
         const fulfillmentOrderHold = await client.request({
-            data: FULFILLMENT_ORDER_HOLD,
+            query: FULFILLMENT_ORDER_HOLD,
             variables: {
                 fulfillmentHold: {
                     reason: "OTHER",
@@ -92,6 +93,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
                 id: firstFulfillmentOrderId,
             }
         });
+
 
         return {
             success: true,

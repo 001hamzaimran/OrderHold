@@ -70,7 +70,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
         });
         // Build correct GraphQL ID
         const orderGid = `gid://shopify/Order/${order.id}`;
-
+        console.log(orderGid);
         const response = await client.query({
             data: GET_FULFILLMENT_ORDER,
             variables: { orderId: orderGid }

@@ -68,25 +68,30 @@ export const createShopifyOrder = async (payload, shop, session) => {
             shopify_updated_at: order.updated_at,
             processed_at: order.processed_at
         });
+        // Build correct GraphQL ID
+        const orderGid = `gid://shopify/Order/${order.id}`;
+
         const response = await client.query({
             data: GET_FULFILLMENT_ORDER,
-            variables: { orderId: order.admin_graphql_api_id }
+            variables: { orderId: orderGid }
         });
 
         const firstFulfillmentOrderId =
             response.body.data.order.fulfillmentOrders.nodes[0].id;
 
         console.log(firstFulfillmentOrderId);
+
         const fulfillmentOrderHold = await client.query({
             data: FULFILLMENT_ORDER_HOLD,
             variables: {
                 fulfillmentHold: {
                     reason: "OTHER",
-                    reasonNotes: "Waiting for Editing Period Complete"
+                    reasonNotes: "Waiting for Editing Period Complete",
                 },
-                id: firstFulfillmentOrderId
+                id: firstFulfillmentOrderId,
             }
-        })
+        });
+
         return {
             success: true,
             order: savedOrder,

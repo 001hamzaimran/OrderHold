@@ -69,7 +69,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
             processed_at: order.processed_at
         });
         // Build correct GraphQL ID
-        const orderGid = `gid://shopify/Order/${order.id}`;
+        const orderGid = `"gid://shopify/Order/${order.id}"`;
         console.log("____", orderGid, "____");
 
         const fulfillmentResponse = await client.request({

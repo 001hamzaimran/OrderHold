@@ -12,7 +12,53 @@ export const createShopifyOrder = async (payload, shop, session) => {
 
         // Save order to database first
         const savedOrder = await ShopifyOrder.create({
-            // ... your existing order creation code
+            shopify_store_id: shop,
+            shopify_order_id: order.id,
+            shopify_graphql_id: order.admin_graphql_api_id,
+            order_number: order.order_number,
+            order_name: order.name,
+            confirmation_number: order.confirmation_number,
+            token: order.token,
+            payment_gateway: order.payment_gateway_names,
+            payment_status: order.financial_status === "paid" ? "paid" : "pending",
+            financial_status: order.financial_status,
+            total_price: order.total_price,
+            subtotal_price: order.subtotal_price,
+            total_tax: order.total_tax,
+            total_discounts: order.total_discounts,
+            currency: order.currency,
+            presentment_currency: order.presentment_currency,
+            total_price_set: order.total_price_set,
+            fulfillment_status: order.fulfillment_status,
+            customer: {
+                shopify_customer_id: order.customer?.id,
+                email: order.customer?.email,
+                first_name: order.customer?.first_name,
+                last_name: order.customer?.last_name,
+                phone: order.customer?.phone
+            },
+            shipping_address: order.shipping_address,
+            billing_address: order.billing_address,
+            line_items: order.line_items.map(item => ({
+                shopify_line_item_id: item.id,
+                product_id: item.product_id,
+                variant_id: item.variant_id,
+                title: item.title,
+                price: item.price,
+                quantity: item.quantity,
+                vendor: item.vendor,
+                fulfillment_status: item.fulfillment_status,
+                fulfillment_service: item.fulfillment_service
+            })),
+            test_order: order.test,
+            confirmed: order.confirmed,
+            source_name: order.source_name,
+            browser_ip: order.browser_ip,
+            landing_site: order.landing_site,
+            referring_site: order.referring_site,
+            shopify_created_at: order.created_at,
+            shopify_updated_at: order.updated_at,
+            processed_at: order.processed_at
         });
 
         // Build correct GraphQL ID (NO quotes in the string)

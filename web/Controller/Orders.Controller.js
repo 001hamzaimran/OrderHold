@@ -72,11 +72,12 @@ export const createShopifyOrder = async (payload, shop, session) => {
         const orderGid = `gid://shopify/Order/${order.id}`;
         console.log("____", orderGid, "____");
 
-        await client.request({
+        const fulfillmentResponse = await client.request({
             query: GET_FULFILLMENT_ORDER,
             variables: { orderId: orderGid }
         });
 
+        console.log("____", fulfillmentResponse, "____");
 
         const firstFulfillmentOrderId =
             fulfillmentResponse.body.data.order.fulfillmentOrders.nodes[0].id;

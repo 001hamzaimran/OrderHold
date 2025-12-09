@@ -10,7 +10,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
         const order = payload;
         const client = new shopify.api.clients.Graphql({ session });
 
-        // Save order to database first
+        // Save order to DB (unchanged)
         const savedOrder = await ShopifyOrder.create({
             shopify_store_id: shop,
             shopify_order_id: order.id,
@@ -61,83 +61,66 @@ export const createShopifyOrder = async (payload, shop, session) => {
             processed_at: order.processed_at
         });
 
-        // Build correct GraphQL ID (NO quotes in the string)
+        // Build correct GraphQL ID (NO extra quote characters)
         const orderGid = `gid://shopify/Order/${order.id}`;
-        console.log("Fetching fulfillment orders for:", orderGid);
+        console.log("___ orderGid:", orderGid);
 
-        // Get fulfillment orders
+        // Query fulfillment orders
         const fulfillmentResponse = await client.request({
             query: GET_FULFILLMENT_ORDER,
             variables: { orderId: orderGid }
         });
 
-        // Check if we got any fulfillment orders
-        const fulfillmentOrders = fulfillmentResponse.body.data.order.fulfillmentOrders.nodes;
+        // Depending on client version the payload may be returned as `data` or `body.data`.
+        const data = fulfillmentResponse?.body?.data ?? fulfillmentResponse?.data ?? fulfillmentResponse;
+        console.log("fulfillmentResponse data:", JSON.stringify(data, null, 2));
 
-        if (!fulfillmentOrders || fulfillmentOrders.length === 0) {
-            console.log("No fulfillment orders found for order:", orderGid);
-            return {
-                success: true,
-                order: savedOrder,
-                message: "No fulfillment orders to put on hold"
-            };
+        const firstFulfillmentOrderId = data?.order?.fulfillmentOrders?.nodes?.[0]?.id;
+        if (!firstFulfillmentOrderId) {
+            console.warn("No fulfillmentOrders found for order:", order.id);
+            return { success: true, order: savedOrder, fulfillmentOrderId: null };
         }
+        console.log("firstFulfillmentOrderId:", firstFulfillmentOrderId);
 
-        const firstFulfillmentOrderId = fulfillmentOrders[0].id;
-        console.log("First fulfillment order ID:", firstFulfillmentOrderId);
-
-        // Try to put fulfillment order on hold
-        try {
-            const fulfillmentOrderHold = await client.request({
-                query: FULFILLMENT_ORDER_HOLD,
-                variables: {
-                    fulfillmentHold: {
-                        reason: "OTHER",
-                        reasonNotes: "Waiting for Editing Period Complete",
-                    },
-                    id: firstFulfillmentOrderId,
-                }
-            });
-
-            // Check for user errors in the response
-            const userErrors = fulfillmentOrderHold.body.data?.fulfillmentOrderHold?.userErrors;
-            if (userErrors && userErrors.length > 0) {
-                console.warn("User errors from fulfillmentOrderHold:", userErrors);
-                // Continue execution even if hold fails
+        // Place a hold. Include a handle to avoid duplicate-hold userErrors if you may place multiple holds.
+        const fulfillmentOrderHoldResponse = await client.request({
+            query: FULFILLMENT_ORDER_HOLD,
+            variables: {
+                fulfillmentHold: {
+                    reason: "OTHER",
+                    reasonNotes: "Waiting for Editing Period Complete",
+                    // optional: provide a handle so you can place multiple holds for the same order
+                    handle: `edit_hold_${Date.now()}`
+                },
+                id: firstFulfillmentOrderId
             }
+        });
 
-            return {
-                success: true,
-                order: savedOrder,
-                fulfillmentOrderId: firstFulfillmentOrderId,
-                fulfillmentOrderHold: fulfillmentOrderHold.body.data?.fulfillmentOrderHold || null
-            };
+        const holdData = fulfillmentOrderHoldResponse?.body?.data ?? fulfillmentOrderHoldResponse?.data ?? fulfillmentOrderHoldResponse;
+        console.log("fulfillmentOrderHold response:", JSON.stringify(holdData, null, 2));
 
-        } catch (holdError) {
-            // Log the hold error but don't fail the entire process
-            console.error("Error putting fulfillment order on hold:", {
-                error: holdError.message,
-                fulfillmentOrderId: firstFulfillmentOrderId,
-                orderId: order.id
-            });
-
-            // Return success anyway since the order was saved
-            return {
-                success: true,
-                order: savedOrder,
-                warning: "Fulfillment hold failed",
-                error: holdError.message
-            };
+        // Check for userErrors
+        const userErrors = holdData?.fulfillmentOrderHold?.userErrors ?? holdData?.errors ?? null;
+        if (userErrors && userErrors.length > 0) {
+            console.error("fulfillmentOrderHold userErrors:", JSON.stringify(userErrors, null, 2));
+            return { success: false, order: savedOrder, fulfillmentOrderId: firstFulfillmentOrderId, userErrors };
         }
+
+        return {
+            success: true,
+            order: savedOrder,
+            fulfillmentOrderId: firstFulfillmentOrderId,
+            fulfillmentOrderHold: holdData?.fulfillmentOrderHold ?? holdData
+        };
 
     } catch (error) {
-        console.error("Error in createShopifyOrder:", {
-            message: error.message,
-            stack: error.stack,
-            orderId: payload?.id,
-            shop: shop
-        });
-        throw error;
+        // Improve error logging so you see the GraphQL userErrors / response body
+        console.error("createShopifyOrder error:", error);
+        if (error?.response) {
+            console.error("error.response.status:", error.response.code ?? error.response.status);
+            console.error("error.response.body:", JSON.stringify(error.response.body, null, 2));
+        }
+        return { success: false, error: error };
     }
 };
 

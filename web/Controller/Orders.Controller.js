@@ -10,20 +10,18 @@ export const createShopifyOrder = async (payload, shop, session) => {
         const order = payload;
         const client = new shopify.api.clients.Graphql({ session });
 
+        // Save order to DB (unchanged)
         const savedOrder = await ShopifyOrder.create({
             shopify_store_id: shop,
             shopify_order_id: order.id,
             shopify_graphql_id: order.admin_graphql_api_id,
-
             order_number: order.order_number,
             order_name: order.name,
             confirmation_number: order.confirmation_number,
             token: order.token,
-
             payment_gateway: order.payment_gateway_names,
             payment_status: order.financial_status === "paid" ? "paid" : "pending",
             financial_status: order.financial_status,
-
             total_price: order.total_price,
             subtotal_price: order.subtotal_price,
             total_tax: order.total_tax,
@@ -31,9 +29,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
             currency: order.currency,
             presentment_currency: order.presentment_currency,
             total_price_set: order.total_price_set,
-
             fulfillment_status: order.fulfillment_status,
-
             customer: {
                 shopify_customer_id: order.customer?.id,
                 email: order.customer?.email,
@@ -41,10 +37,8 @@ export const createShopifyOrder = async (payload, shop, session) => {
                 last_name: order.customer?.last_name,
                 phone: order.customer?.phone
             },
-
             shipping_address: order.shipping_address,
             billing_address: order.billing_address,
-
             line_items: order.line_items.map(item => ({
                 shopify_line_item_id: item.id,
                 product_id: item.product_id,
@@ -56,59 +50,80 @@ export const createShopifyOrder = async (payload, shop, session) => {
                 fulfillment_status: item.fulfillment_status,
                 fulfillment_service: item.fulfillment_service
             })),
-
             test_order: order.test,
             confirmed: order.confirmed,
             source_name: order.source_name,
             browser_ip: order.browser_ip,
             landing_site: order.landing_site,
             referring_site: order.referring_site,
-
             shopify_created_at: order.created_at,
             shopify_updated_at: order.updated_at,
             processed_at: order.processed_at
         });
-        // Build correct GraphQL ID
-        const orderGid = `"gid://shopify/Order/${order.id}"`;
-        console.log("____", orderGid, "____");
 
+        // Build correct GraphQL ID (NO extra quote characters)
+        const orderGid = `gid://shopify/Order/${order.id}`;
+        console.log("___ orderGid:", orderGid);
+
+        // Query fulfillment orders
         const fulfillmentResponse = await client.request({
             query: GET_FULFILLMENT_ORDER,
             variables: { orderId: orderGid }
         });
 
-        console.log("____", fulfillmentResponse, "____");
+        // Depending on client version the payload may be returned as `data` or `body.data`.
+        const data = fulfillmentResponse?.body?.data ?? fulfillmentResponse?.data ?? fulfillmentResponse;
+        console.log("fulfillmentResponse data:", JSON.stringify(data, null, 2));
 
-        const firstFulfillmentOrderId =
-            fulfillmentResponse.body.data.order.fulfillmentOrders.nodes[0].id;
+        const firstFulfillmentOrderId = data?.order?.fulfillmentOrders?.nodes?.[0]?.id;
+        if (!firstFulfillmentOrderId) {
+            console.warn("No fulfillmentOrders found for order:", order.id);
+            return { success: true, order: savedOrder, fulfillmentOrderId: null };
+        }
+        console.log("firstFulfillmentOrderId:", firstFulfillmentOrderId);
 
-        console.log("____", firstFulfillmentOrderId, "____");
-
-        const fulfillmentOrderHold = await client.request({
+        // Place a hold. Include a handle to avoid duplicate-hold userErrors if you may place multiple holds.
+        const fulfillmentOrderHoldResponse = await client.request({
             query: FULFILLMENT_ORDER_HOLD,
             variables: {
                 fulfillmentHold: {
                     reason: "OTHER",
                     reasonNotes: "Waiting for Editing Period Complete",
+                    // optional: provide a handle so you can place multiple holds for the same order
+                    handle: `edit_hold_${Date.now()}`
                 },
-                id: firstFulfillmentOrderId,
+                id: firstFulfillmentOrderId
             }
         });
 
+        const holdData = fulfillmentOrderHoldResponse?.body?.data ?? fulfillmentOrderHoldResponse?.data ?? fulfillmentOrderHoldResponse;
+        console.log("fulfillmentOrderHold response:", JSON.stringify(holdData, null, 2));
+
+        // Check for userErrors
+        const userErrors = holdData?.fulfillmentOrderHold?.userErrors ?? holdData?.errors ?? null;
+        if (userErrors && userErrors.length > 0) {
+            console.error("fulfillmentOrderHold userErrors:", JSON.stringify(userErrors, null, 2));
+            return { success: false, order: savedOrder, fulfillmentOrderId: firstFulfillmentOrderId, userErrors };
+        }
 
         return {
             success: true,
             order: savedOrder,
             fulfillmentOrderId: firstFulfillmentOrderId,
-            fulfillmentOrderHold
+            fulfillmentOrderHold: holdData?.fulfillmentOrderHold ?? holdData
         };
 
-
     } catch (error) {
-        console.error(error);
-        return
+        // Improve error logging so you see the GraphQL userErrors / response body
+        console.error("createShopifyOrder error:", error);
+        if (error?.response) {
+            console.error("error.response.status:", error.response.code ?? error.response.status);
+            console.error("error.response.body:", JSON.stringify(error.response.body, null, 2));
+        }
+        return { success: false, error: error };
     }
 };
+
 
 export const getShopifyOrders = async (req, res) => {
     try {

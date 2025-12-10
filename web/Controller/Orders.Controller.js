@@ -162,7 +162,7 @@ export const getOrder = async (req, res) => {
         }
 
         // Convert dates
-        const createdAt = new Date(order.created_at);
+        const createdAt = new Date(order.createdAt);
         const now = new Date();
 
         // Difference in minutes

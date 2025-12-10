@@ -32,13 +32,17 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     console.log("LOADED ORDER:", order);
 
+    if (orderRes.message && orderRes.success === false) {
+        body.innerHTML = `<div class="error-message" style="color:red;">${orderRes.message}</div>`;
+        return;
+    }
+
     // If invalid order
     if (!order) {
         body.innerHTML = `<p style="color:red;">Order not found.</p>`;
         return;
     }
 
-    // ---------- PAGE CONTENT ----------
     const pageHTML = `
         <div class="order-edit-wrapper">
 
@@ -81,7 +85,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                 <h3>Shipping Address</h3>
                 <p>${order.shipping_address.first_name} ${order.shipping_address.last_name}</p>
                 <p>${order.shipping_address.address1}</p>
-                <p>${order.shipping_address.city}, ${order.shipping_address.country}</p>
+                <p>${order.shipping_address.city}, ${order.shipping_address.country}, ${order.shipping_address.zip}</p>
             </div>
 
             <!-- ACTIONS -->

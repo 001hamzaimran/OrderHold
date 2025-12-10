@@ -28,7 +28,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     };
 
     const orderRes = await fetchOrder();
-    const order = orderRes?.order?.[0];
+    const order = orderRes?.order;
 
     console.log("LOADED ORDER:", order);
 

@@ -5,6 +5,7 @@ const StoreSchema = new mongoose.Schema({
     domain: { type: String, required: true },
     store_Name: { type: String, required: true },
     country: { type: String, required: true },
+    orderEditTime: { type: Number, default: 0 },
 }, { timestamps: true });
 
 const storeModel = mongoose.model("Store", StoreSchema)

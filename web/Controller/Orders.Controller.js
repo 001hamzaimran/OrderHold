@@ -3,6 +3,7 @@ import { EditOrderBegin } from "../Graphql/Mutation/OrderEditBegin.graphql.js";
 import { GET_FULFILLMENT_ORDER } from "../Graphql/Query/GetFulfillmentOrder.js";
 import sendEditEmail from "../Middlewares/Email/Email.config.js";
 import ShopifyOrder from "../Models/Orders.Model.js";
+import storeModel from "../Models/Store.Model.js";
 import shopify from "../shopify.js";
 
 export const createShopifyOrder = async (payload, shop, session) => {
@@ -124,7 +125,6 @@ export const createShopifyOrder = async (payload, shop, session) => {
     }
 };
 
-
 export const getShopifyOrders = async (req, res) => {
     try {
         const shop = req.params.shop;
@@ -145,12 +145,39 @@ export const getShopifyOrders = async (req, res) => {
 export const getOrder = async (req, res) => {
     try {
         const { orderId, shop } = req.params;
-        const order = await ShopifyOrder.find({ shopify_order_id: orderId, shopify_store_id: shop });
+
+        const shopifyShop = await storeModel.findOne({ domain: shop });
+
+        if (!shopifyShop) {
+            return res.status(404).json({ success: false, message: "Shop not found" });
+        }
+
+        const order = await ShopifyOrder.findOne({
+            shopify_order_id: orderId,
+            shopify_store_id: shop
+        });
+
         if (!order) {
             return res.status(404).json({ success: false, message: "Order not found" });
         }
 
+        // Convert dates
+        const createdAt = new Date(order.created_at);
+        const now = new Date();
+
+        // Difference in minutes
+        const diffMinutes = Math.floor((now - createdAt) / (1000 * 60));
+
+        // Check allowed edit time
+        if (diffMinutes > shopifyShop.orderEditTime) {
+            return res.status(403).json({
+                success: false,
+                message: "Editing Time Expired"
+            });
+        }
+
         return res.status(200).json({ success: true, order });
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, error: error.message });

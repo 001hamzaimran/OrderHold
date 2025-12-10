@@ -37,3 +37,23 @@ export const getShop = async (req, res) => {
         return res.status(500).json({ message: "Internal server Error" });
     }
 };
+
+export const addEditTimer = async (req, res) => {
+    try {
+        const { orderEditTime, domain } = req.body;
+
+        const store = await storeModel.findOne({ domain });
+
+        if (!store) {
+            return res.status(404).json({ message: "Store not found" });
+        }
+
+        store.orderEditTime = orderEditTime;
+        await store.save();
+
+        return res.status(200).json({ message: "Timer updated successfully", store });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal server Error" });
+    }
+};

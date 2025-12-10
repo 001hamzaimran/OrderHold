@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useSelector } from 'react-redux';
-import "./Settings.css";
+import "./settings.css";
 
 function Settings() {
   const Shop = useSelector((state) => state.store.storeDetail);

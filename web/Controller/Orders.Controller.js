@@ -65,24 +65,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
         const orderGid = `gid://shopify/Order/${order.id}`;
         console.log("___ orderGid:", orderGid);
 
-        // First, let's test if we can make a simple query to verify the session
-        try {
-            const testQuery = await client.query({
-                data: {
-                    query: `query {
-                        shop {
-                            name
-                        }
-                    }`
-                }
-            });
-            console.log("Test query successful, shop:", testQuery.body?.data?.shop?.name);
-        } catch (testError) {
-            console.error("Test query failed:", testError);
-            throw new Error("GraphQL client not properly initialized");
-        }
-
-        // Query fulfillment orders - USING CORRECT FORMAT
+        // Query fulfillment orders - Use the correct GraphQL client method
         const GET_FULFILLMENT_ORDER = `
             query GetFulfillmentOrders($orderId: ID!) {
                 order(id: $orderId) {
@@ -96,16 +79,17 @@ export const createShopifyOrder = async (payload, shop, session) => {
             }
         `;
 
+        // IMPORTANT: Use the correct request format for your Shopify API version
         const fulfillmentResponse = await client.request({
-            data: {
-                query: GET_FULFILLMENT_ORDER,
-                variables: { orderId: orderGid }
-            }
+            query: GET_FULFILLMENT_ORDER,
+            variables: { orderId: orderGid }
         });
 
-        // Handle response based on Shopify API version
+        console.log("fulfillmentResponse:", JSON.stringify(fulfillmentResponse, null, 2));
+
+        // Handle response based on your Shopify API version
         let data;
-        if (fulfillmentResponse.body) {
+        if (fulfillmentResponse.body && fulfillmentResponse.body.data) {
             data = fulfillmentResponse.body.data;
         } else if (fulfillmentResponse.data) {
             data = fulfillmentResponse.data;
@@ -113,7 +97,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
             data = fulfillmentResponse;
         }
 
-        console.log("fulfillmentResponse data:", JSON.stringify(data, null, 2));
+        console.log("Fulfillment data:", JSON.stringify(data, null, 2));
 
         if (data.errors) {
             console.error("GraphQL errors:", data.errors);
@@ -125,6 +109,7 @@ export const createShopifyOrder = async (payload, shop, session) => {
             console.warn("No fulfillmentOrders found for order:", order.id);
             return { success: true, order: savedOrder, fulfillmentOrderId: null };
         }
+
         console.log("firstFulfillmentOrderId:", firstFulfillmentOrderId);
 
         // Place a hold
@@ -146,29 +131,27 @@ export const createShopifyOrder = async (payload, shop, session) => {
         `;
 
         const fulfillmentOrderHoldResponse = await client.request({
-            data: {
-                query: FULFILLMENT_ORDER_HOLD_MUTATION,
-                variables: {
-                    fulfillmentHold: {
-                        reason: "OTHER",
-                        reasonNotes: "Waiting for Editing Period Complete",
-                        handle: `edit_hold_${Date.now()}`
-                    },
-                    id: firstFulfillmentOrderId
-                }
+            query: FULFILLMENT_ORDER_HOLD_MUTATION,
+            variables: {
+                fulfillmentHold: {
+                    reason: "OTHER",
+                    reasonNotes: "Waiting for Editing Period Complete",
+                    handle: `edit_hold_${Date.now()}`
+                },
+                id: firstFulfillmentOrderId
             }
         });
 
+        console.log("Hold response:", JSON.stringify(fulfillmentOrderHoldResponse, null, 2));
+
         let holdData;
-        if (fulfillmentOrderHoldResponse.body) {
+        if (fulfillmentOrderHoldResponse.body && fulfillmentOrderHoldResponse.body.data) {
             holdData = fulfillmentOrderHoldResponse.body.data;
         } else if (fulfillmentOrderHoldResponse.data) {
             holdData = fulfillmentOrderHoldResponse.data;
         } else {
             holdData = fulfillmentOrderHoldResponse;
         }
-
-        console.log("fulfillmentOrderHold response:", JSON.stringify(holdData, null, 2));
 
         // Check for userErrors
         const userErrors = holdData?.fulfillmentOrderHold?.userErrors || holdData?.errors || null;
@@ -186,11 +169,22 @@ export const createShopifyOrder = async (payload, shop, session) => {
 
     } catch (error) {
         console.error("createShopifyOrder error:", error);
-        console.error("Error details:", {
-            message: error.message,
-            stack: error.stack,
-            response: error.response?.body || error.response
-        });
+
+        // More detailed error logging
+        if (error.response) {
+            console.error("Error response status:", error.response.code || error.response.status);
+            console.error("Error response body:", JSON.stringify(error.response.body, null, 2));
+            console.error("Error response headers:", error.response.headers);
+        }
+
+        if (error instanceof shopify.api.clients.HttpResponseError) {
+            console.error("HttpResponseError details:", {
+                code: error.code,
+                statusText: error.statusText,
+                body: error.body
+            });
+        }
+
         return { success: false, error: error.message };
     }
 };

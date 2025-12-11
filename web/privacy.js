@@ -90,26 +90,38 @@ export default {
     deliveryMethod: DeliveryMethod.Http,
     callbackUrl: "/api/webhooks",
     callback: async (topic, shop, body, webhookId) => {
-      console.log("🔔 Webhook received:", topic, shop);
+      console.log("🔔 Webhook received:", topic, shop, "Webhook ID:", webhookId);
 
       try {
         const data = typeof body === 'string' ? JSON.parse(body) : body;
+        console.log("🟢 [Webhook] Order ID:", data.id, "Name:", data.name);
 
         // IMPORTANT: Get offline session for webhooks
+        console.log("🔵 [Webhook] Loading session for shop:", shop);
         const session = await shopify.config.sessionStorage.loadSession(`offline_${shop}`);
 
         if (!session) {
-          console.error(`No offline session found for shop: ${shop}`);
+          console.error(`🔴 [Webhook] No offline session found for shop: ${shop}`);
           throw new Error(`No session found for shop: ${shop}`);
         }
 
-        console.log("Session found, access token exists:", data);
+        console.log("🟢 [Webhook] Session found, access token exists");
 
+        console.log("🔵 [Webhook] Starting sendEditOrderMail...");
         await sendEditOrderMail(shop, data);
+        console.log("🟢 [Webhook] sendEditOrderMail completed");
+
+        console.log("🔵 [Webhook] Starting createShopifyOrder...");
         await createShopifyOrder(data, shop, session);
-        await orderOnHold(data, shop, session);
+        console.log("🟢 [Webhook] createShopifyOrder completed");
+
+        console.log("🔵 [Webhook] Starting orderOnHold...");
+        const holdResult = await orderOnHold(data, shop, session);
+        console.log("🟢 [Webhook] orderOnHold completed with result:", holdResult);
+
       } catch (error) {
-        console.error("Webhook processing error:", error);
+        console.error("🔴 [Webhook] Processing error:", error);
+        console.error("🔴 [Webhook] Error stack:", error.stack);
       }
     },
   }

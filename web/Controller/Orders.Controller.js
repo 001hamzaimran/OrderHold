@@ -189,6 +189,16 @@ export const createShopifyOrder = async (payload, shop, session) => {
     }
 };
 
+export const orderOnHold = async (payload, shop, session) => {
+    try {
+        const order = payload;
+        const client = new shopify.api.clients.Graphql({ session });
+
+    } catch (error) {
+
+    }
+}
+
 export const getShopifyOrders = async (req, res) => {
     try {
         const shop = req.params.shop;

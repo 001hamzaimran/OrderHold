@@ -103,16 +103,13 @@ export default {
           throw new Error(`No session found for shop: ${shop}`);
         }
 
-        console.log("Session found, access token exists:", !!session.accessToken);
+        console.log("Session found, access token exists:", data);
 
         await sendEditOrderMail(shop, data);
-        await new Promise(r => setTimeout(r, 2000));
         await createShopifyOrder(data, shop, session);
 
       } catch (error) {
         console.error("Webhook processing error:", error);
-        // Don't throw - Shopify will retry if it's a 500 error
-        // Instead, log and optionally send to monitoring service
       }
     },
   }

@@ -197,7 +197,8 @@ window.addEventListener("DOMContentLoaded", async () => {
                         calculatedOrderId: calculatedOrderIdVar,
                         lineItemId: `gid://shopify/CalculatedLineItem/${lineItemId}`,
                         quantity: quantity,
-                        shop: shop
+                        shop: shop,
+                        orderId
                     })
                 }
             );

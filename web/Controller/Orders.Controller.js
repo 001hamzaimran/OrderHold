@@ -295,7 +295,7 @@ export const AddProductToOrder = async (req, res) => {
         }
 
         // const getOrder = await ShopifyOrder.findOne({ shopify_order_id: orderId, shopify_store_id: shop });
- 
+
         return res.status(200).json({
             success: true,
             calculatedOrderId,
@@ -375,7 +375,7 @@ export const RemoveLineItem = async (req, res) => {
 
 export const UpdateLineItem = async (req, res) => {
     try {
-        const { calculatedOrderId, lineItemId, quantity, shop } = req.body;
+        const { calculatedOrderId, lineItemId, quantity, shop, orderId } = req.body;
 
         // Input validation
         if (!calculatedOrderId || !lineItemId || !quantity || !shop) {
@@ -448,6 +448,29 @@ export const UpdateLineItem = async (req, res) => {
             throw new Error(mutationResult.userErrors[0].message);
         }
 
+        const updateOrder = await ShopifyOrder.findOne({ shopify_order_id: orderId, shopify_store_id: shop });
+
+        if (!updateOrder) {
+            throw new Error("Order not found");
+        }
+        const splittedLineItemId = Number(lineItemId.split("/").pop());
+
+        // Find the line item
+        const lineItem = updateOrder.line_items.find(
+            (item) => item.shopify_line_item_id === splittedLineItemId
+        );
+
+        if (!lineItem) {
+            throw new Error("Line item not found");
+        }
+
+        // Update quantity correctly
+        lineItem.quantity = parseInt(quantity, 10);
+
+        // Save order
+        await updateOrder.save();
+
+
         // Note: Your mutation succeeded but returned a different line item ID
         // This might be because the line item you tried to update doesn't exist or 
         // the CalculatedOrder has different line items than expected
@@ -476,8 +499,8 @@ export const UpdateLineItem = async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
-};
-
+}
+    ;
 export const UpdateCustomerInfo = async (req, res) => {
     try {
         const { calculatedOrderId, firstName, lastName, email, shop } = req.body;

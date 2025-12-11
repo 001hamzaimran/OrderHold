@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from 'react-redux';
 import "./settings.css";
 
@@ -12,6 +12,13 @@ function Settings() {
   const [timeUnit, setTimeUnit] = useState("minutes");
   const [isHovered, setIsHovered] = useState(false);
   const [pulseAnimation, setPulseAnimation] = useState(false);
+
+
+  useEffect(() => {
+    if (Shop.orderEditTime) {
+      setEditLimit(Shop.orderEditTime);
+    }
+  }, [Shop])
 
   // Handle save with visual feedback
   const handleSave = async () => {

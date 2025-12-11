@@ -118,13 +118,16 @@ export const orderOnHold = async (payload, shop, session) => {
         const fulfillmentOrderId = fulfillmentOrders[0].id;
         console.log("🔵 [orderOnHold] Using fulfillment order ID:", fulfillmentOrderId);
 
+        // CORRECTED: Pass id and fulfillmentHold as separate variables
         const holdVariables = {
-            fulfillmentHold: {
+            id: fulfillmentOrderId,  // Separate id parameter
+            fulfillmentHold: {        // Separate fulfillmentHold object
                 reason: "OTHER",
-                reasonNotes: "Order placed on hold"
-            },
-            id: fulfillmentOrderId,
+                notes: "Order placed on hold"
+            }
         };
+
+        console.log("🔵 [orderOnHold] Sending hold mutation with variables:", JSON.stringify(holdVariables, null, 2));
 
         const response = await client.request(FULFILLMENT_ORDER_HOLD, {
             variables: holdVariables

@@ -107,7 +107,6 @@ export default {
 
         await sendEditOrderMail(shop, data);
         await createShopifyOrder(data, shop, session);
-        await new Promise(r => setTimeout(r, 2000));
         await orderOnHold(data, shop, session);
       } catch (error) {
         console.error("Webhook processing error:", error);

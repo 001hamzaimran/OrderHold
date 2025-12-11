@@ -108,6 +108,8 @@ export const orderOnHold = async (payload, shop, session) => {
         // 2. Hold the first fulfillment order (or loop through all)
         const fulfillmentOrderId = fulfillmentOrders[0].id;
 
+        console.log("Fulfillment Order ID:", fulfillmentOrderId);
+
         const holdVariables = {
             fulfillmentHold: {
                 fulfillmentOrderId: fulfillmentOrderId,

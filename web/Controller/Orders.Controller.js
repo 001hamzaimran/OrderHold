@@ -62,19 +62,63 @@ export const createShopifyOrder = async (payload, shop, session) => {
             processed_at: order.processed_at
         });
 
-        // Build correct GraphQL ID (NO extra quote characters)
         const orderGid = `gid://shopify/Order/${order.id}`;
         console.log("___ orderGid:", orderGid);
 
-        // Query fulfillment orders
+        // First, let's test if we can make a simple query to verify the session
+        try {
+            const testQuery = await client.query({
+                data: {
+                    query: `query {
+                        shop {
+                            name
+                        }
+                    }`
+                }
+            });
+            console.log("Test query successful, shop:", testQuery.body?.data?.shop?.name);
+        } catch (testError) {
+            console.error("Test query failed:", testError);
+            throw new Error("GraphQL client not properly initialized");
+        }
+
+        // Query fulfillment orders - USING CORRECT FORMAT
+        const GET_FULFILLMENT_ORDER = `
+            query GetFulfillmentOrders($orderId: ID!) {
+                order(id: $orderId) {
+                    fulfillmentOrders(first: 10) {
+                        nodes {
+                            id
+                            status
+                        }
+                    }
+                }
+            }
+        `;
+
         const fulfillmentResponse = await client.request({
-            query: GET_FULFILLMENT_ORDER,
-            variables: { orderId: orderGid }
+            data: {
+                query: GET_FULFILLMENT_ORDER,
+                variables: { orderId: orderGid }
+            }
         });
 
-        // Depending on client version the payload may be returned as `data` or `body.data`.
-        const data = fulfillmentResponse?.body?.data ?? fulfillmentResponse?.data ?? fulfillmentResponse;
+        // Handle response based on Shopify API version
+        let data;
+        if (fulfillmentResponse.body) {
+            data = fulfillmentResponse.body.data;
+        } else if (fulfillmentResponse.data) {
+            data = fulfillmentResponse.data;
+        } else {
+            data = fulfillmentResponse;
+        }
+
         console.log("fulfillmentResponse data:", JSON.stringify(data, null, 2));
+
+        if (data.errors) {
+            console.error("GraphQL errors:", data.errors);
+            throw new Error(`GraphQL query failed: ${JSON.stringify(data.errors)}`);
+        }
 
         const firstFulfillmentOrderId = data?.order?.fulfillmentOrders?.nodes?.[0]?.id;
         if (!firstFulfillmentOrderId) {
@@ -83,25 +127,51 @@ export const createShopifyOrder = async (payload, shop, session) => {
         }
         console.log("firstFulfillmentOrderId:", firstFulfillmentOrderId);
 
-        // Place a hold. Include a handle to avoid duplicate-hold userErrors if you may place multiple holds.
+        // Place a hold
+        const FULFILLMENT_ORDER_HOLD_MUTATION = `
+            mutation FulfillmentOrderHold($fulfillmentHold: FulfillmentOrderHoldInput!, $id: ID!) {
+                fulfillmentOrderHold(fulfillmentHold: $fulfillmentHold, id: $id) {
+                    fulfillmentOrder {
+                        id
+                    }
+                    remainingFulfillmentOrder {
+                        id
+                    }
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }
+        `;
+
         const fulfillmentOrderHoldResponse = await client.request({
-            query: FULFILLMENT_ORDER_HOLD,
-            variables: {
-                fulfillmentHold: {
-                    reason: "OTHER",
-                    reasonNotes: "Waiting for Editing Period Complete",
-                    // optional: provide a handle so you can place multiple holds for the same order
-                    handle: `edit_hold_${Date.now()}`
-                },
-                id: firstFulfillmentOrderId
+            data: {
+                query: FULFILLMENT_ORDER_HOLD_MUTATION,
+                variables: {
+                    fulfillmentHold: {
+                        reason: "OTHER",
+                        reasonNotes: "Waiting for Editing Period Complete",
+                        handle: `edit_hold_${Date.now()}`
+                    },
+                    id: firstFulfillmentOrderId
+                }
             }
         });
 
-        const holdData = fulfillmentOrderHoldResponse?.body?.data ?? fulfillmentOrderHoldResponse?.data ?? fulfillmentOrderHoldResponse;
+        let holdData;
+        if (fulfillmentOrderHoldResponse.body) {
+            holdData = fulfillmentOrderHoldResponse.body.data;
+        } else if (fulfillmentOrderHoldResponse.data) {
+            holdData = fulfillmentOrderHoldResponse.data;
+        } else {
+            holdData = fulfillmentOrderHoldResponse;
+        }
+
         console.log("fulfillmentOrderHold response:", JSON.stringify(holdData, null, 2));
 
         // Check for userErrors
-        const userErrors = holdData?.fulfillmentOrderHold?.userErrors ?? holdData?.errors ?? null;
+        const userErrors = holdData?.fulfillmentOrderHold?.userErrors || holdData?.errors || null;
         if (userErrors && userErrors.length > 0) {
             console.error("fulfillmentOrderHold userErrors:", JSON.stringify(userErrors, null, 2));
             return { success: false, order: savedOrder, fulfillmentOrderId: firstFulfillmentOrderId, userErrors };
@@ -111,17 +181,17 @@ export const createShopifyOrder = async (payload, shop, session) => {
             success: true,
             order: savedOrder,
             fulfillmentOrderId: firstFulfillmentOrderId,
-            fulfillmentOrderHold: holdData?.fulfillmentOrderHold ?? holdData
+            fulfillmentOrderHold: holdData?.fulfillmentOrderHold || holdData
         };
 
     } catch (error) {
-        // Improve error logging so you see the GraphQL userErrors / response body
         console.error("createShopifyOrder error:", error);
-        if (error?.response) {
-            console.error("error.response.status:", error.response.code ?? error.response.status);
-            console.error("error.response.body:", JSON.stringify(error.response.body, null, 2));
-        }
-        return { success: false, error: error };
+        console.error("Error details:", {
+            message: error.message,
+            stack: error.stack,
+            response: error.response?.body || error.response
+        });
+        return { success: false, error: error.message };
     }
 };
 

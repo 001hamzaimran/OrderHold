@@ -94,23 +94,24 @@ export default {
 
       try {
         const data = typeof body === 'string' ? JSON.parse(body) : body;
-        // console.log("Order data:", JSON.stringify(data, null, 2));
 
-        // Get session correctly
-        const sessions = await shopify.config.sessionStorage.findSessionsByShop(shop);
-        if (!sessions || sessions.length === 0) {
+        // IMPORTANT: Get offline session for webhooks
+        const session = await shopify.config.sessionStorage.loadSession(`offline_${shop}`);
+
+        if (!session) {
+          console.error(`No offline session found for shop: ${shop}`);
           throw new Error(`No session found for shop: ${shop}`);
         }
 
-        const session = sessions[0];
-        console.log("Session found:", session);
-        console.log("________________________");
+        console.log("Session found, access token exists:", !!session.accessToken);
+
         await createShopifyOrder(data, shop, session);
         await sendEditOrderMail(shop, data);
+
       } catch (error) {
         console.error("Webhook processing error:", error);
-        // Rethrow to ensure proper error handling
-        throw error;
+        // Don't throw - Shopify will retry if it's a 500 error
+        // Instead, log and optionally send to monitoring service
       }
     },
   }

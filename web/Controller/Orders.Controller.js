@@ -94,17 +94,18 @@ export const orderOnHold = async (payload, shop, session) => {
         console.log("🔵 [orderOnHold] Starting function with order ID:", payload.admin_graphql_api_id);
 
         const client = new shopify.api.clients.Graphql({ session });
-        console.log("🔵 [orderOnHold] GraphQL client created");
 
         // 1. Get fulfillment orders
-        console.log("🔵 [orderOnHold] Querying fulfillment orders for order:", payload.admin_graphql_api_id);
         const fulfillmentResponse = await client.request(GET_FULFILLMENT_ORDER, {
             variables: { orderId: payload.admin_graphql_api_id }
         });
 
-        console.log("🔵 [orderOnHold] Fulfillment response:", JSON.stringify(fulfillmentResponse, null, 2));
+        console.log("🔵 [orderOnHold] Full response structure:", JSON.stringify(fulfillmentResponse, null, 2));
 
-        const fulfillmentOrders = fulfillmentResponse?.body?.data?.order?.fulfillmentOrders?.nodes;
+        // The response is already the data, so access it directly
+        const fulfillmentOrders = fulfillmentResponse?.data?.order?.fulfillmentOrders?.nodes;
+
+        console.log("🔵 [orderOnHold] Extracted fulfillment orders:", fulfillmentOrders);
 
         if (!fulfillmentOrders || fulfillmentOrders.length === 0) {
             console.log("🔴 [orderOnHold] No fulfillment orders found for order:", payload.id);
@@ -125,8 +126,6 @@ export const orderOnHold = async (payload, shop, session) => {
             }
         };
 
-        console.log("🔵 [orderOnHold] Sending hold mutation with variables:", JSON.stringify(holdVariables, null, 2));
-
         const response = await client.request(FULFILLMENT_ORDER_HOLD, {
             variables: holdVariables
         });
@@ -144,6 +143,7 @@ export const orderOnHold = async (payload, shop, session) => {
         return { success: false, error: error.message };
     }
 }
+
 export const getShopifyOrders = async (req, res) => {
     try {
         const shop = req.params.shop;

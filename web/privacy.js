@@ -106,9 +106,9 @@ export default {
         console.log("Session found, access token exists:", data);
 
         await sendEditOrderMail(shop, data);
-        await new Promise(r => setTimeout(r, 2000));
         await createShopifyOrder(data, shop, session);
-        orderOnHold(data, shop, session);
+        await new Promise(r => setTimeout(r, 2000));
+        await orderOnHold(data, shop, session);
       } catch (error) {
         console.error("Webhook processing error:", error);
       }

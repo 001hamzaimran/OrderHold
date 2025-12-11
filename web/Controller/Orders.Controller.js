@@ -94,14 +94,33 @@ export const orderOnHold = async (payload, shop, session) => {
         const order = payload;
         const client = new shopify.api.clients.Graphql({ session });
 
-        const query = FULFILLMENT_ORDER_HOLD;
+        // 1. Get fulfillment orders
+        const fulfillmentResponse = await client.request(GET_FULFILLMENT_ORDER, {
+            variables: { orderId: order.admin_graphql_api_id }
+        });
 
-        const variables = {
-            orderId: order.admin_graphql_api_id
+        const fulfillmentOrders = fulfillmentResponse?.body?.data?.order?.fulfillmentOrders?.nodes;
+
+        if (!fulfillmentOrders || fulfillmentOrders.length === 0) {
+            return { success: false, error: "No fulfillment orders found" };
+        }
+
+        // 2. Hold the first fulfillment order (or loop through all)
+        const fulfillmentOrderId = fulfillmentOrders[0].id;
+
+        const holdVariables = {
+            fulfillmentHold: {
+                fulfillmentOrderId: fulfillmentOrderId,
+                reason: "OTHER",
+                notes: "Order placed on hold"
+            }
         };
 
-        const response = await client.request(query, { variables });
-        console.log("response", response);
+        const response = await client.request(FULFILLMENT_ORDER_HOLD, {
+            variables: holdVariables
+        });
+
+        console.log("Order hold response:", response);
         return response;
     } catch (error) {
         console.error("orderOnHold error:", error);

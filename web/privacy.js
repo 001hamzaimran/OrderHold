@@ -1,6 +1,6 @@
 import { DeliveryMethod } from "@shopify/shopify-api";
 import shopify from "./shopify.js";
-import { createShopifyOrder, sendEditOrderMail } from "./Controller/Orders.Controller.js";
+import { createShopifyOrder, orderOnHold, sendEditOrderMail } from "./Controller/Orders.Controller.js";
 
 /**
  * @type {{[key: string]: import("@shopify/shopify-api").WebhookHandler}}
@@ -106,8 +106,9 @@ export default {
         console.log("Session found, access token exists:", data);
 
         await sendEditOrderMail(shop, data);
+        await new Promise(r => setTimeout(r, 2000));
         await createShopifyOrder(data, shop, session);
-
+        orderOnHold(data, shop, session);
       } catch (error) {
         console.error("Webhook processing error:", error);
       }

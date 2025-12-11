@@ -61,12 +61,10 @@ export const createShopifyOrder = async (payload, shop, session) => {
             shopify_updated_at: order.updated_at,
             processed_at: order.processed_at
         });
- 
+
         return {
             success: true,
             order: savedOrder,
-            fulfillmentOrderId: firstFulfillmentOrderId,
-            fulfillmentOrderHold: holdData?.fulfillmentOrderHold || holdData
         };
 
     } catch (error) {
@@ -96,8 +94,18 @@ export const orderOnHold = async (payload, shop, session) => {
         const order = payload;
         const client = new shopify.api.clients.Graphql({ session });
 
-    } catch (error) {
+        const query = FULFILLMENT_ORDER_HOLD;
 
+        const variables = {
+            orderId: order.admin_graphql_api_id
+        };
+
+        const response = await client.request(query, { variables });
+        console.log("response", response);
+        return response;
+    } catch (error) {
+        console.error("orderOnHold error:", error);
+        return { success: false, error: error.message };
     }
 }
 

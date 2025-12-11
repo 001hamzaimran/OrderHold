@@ -100,12 +100,7 @@ export const orderOnHold = async (payload, shop, session) => {
             variables: { orderId: payload.admin_graphql_api_id }
         });
 
-        console.log("🔵 [orderOnHold] Full response structure:", JSON.stringify(fulfillmentResponse, null, 2));
-
-        // The response is already the data, so access it directly
         const fulfillmentOrders = fulfillmentResponse?.data?.order?.fulfillmentOrders?.nodes;
-
-        console.log("🔵 [orderOnHold] Extracted fulfillment orders:", fulfillmentOrders);
 
         if (!fulfillmentOrders || fulfillmentOrders.length === 0) {
             console.log("🔴 [orderOnHold] No fulfillment orders found for order:", payload.id);
@@ -118,12 +113,12 @@ export const orderOnHold = async (payload, shop, session) => {
         const fulfillmentOrderId = fulfillmentOrders[0].id;
         console.log("🔵 [orderOnHold] Using fulfillment order ID:", fulfillmentOrderId);
 
-        // CORRECTED: Pass id and fulfillmentHold as separate variables
+        // CORRECTED: Use reasonNotes instead of notes
         const holdVariables = {
-            id: fulfillmentOrderId,  // Separate id parameter
-            fulfillmentHold: {        // Separate fulfillmentHold object
+            id: fulfillmentOrderId,
+            fulfillmentHold: {
                 reason: "OTHER",
-                notes: "Order placed on hold"
+                reasonNotes: "Order placed on hold by automated system" // Changed from 'notes' to 'reasonNotes'
             }
         };
 
@@ -133,8 +128,17 @@ export const orderOnHold = async (payload, shop, session) => {
             variables: holdVariables
         });
 
-        console.log("🟢 [orderOnHold] Hold mutation response:", JSON.stringify(response, null, 2));
-        return response;
+        // Check for user errors in the response
+        if (response?.data?.fulfillmentOrderHold?.userErrors?.length > 0) {
+            console.error("🔴 [orderOnHold] User errors:", response.data.fulfillmentOrderHold.userErrors);
+            return {
+                success: false,
+                error: response.data.fulfillmentOrderHold.userErrors[0].message
+            };
+        }
+
+        console.log("🟢 [orderOnHold] Hold mutation successful:", JSON.stringify(response, null, 2));
+        return { success: true, data: response };
 
     } catch (error) {
         console.error("🔴 [orderOnHold] Error:", error);

@@ -120,10 +120,10 @@ export const orderOnHold = async (payload, shop, session) => {
 
         const holdVariables = {
             fulfillmentHold: {
-                fulfillmentOrderId: fulfillmentOrderId,
                 reason: "OTHER",
-                notes: "Order placed on hold"
-            }
+                reasonNotes: "Order placed on hold"
+            },
+            id: fulfillmentOrderId,
         };
 
         const response = await client.request(FULFILLMENT_ORDER_HOLD, {
